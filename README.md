@@ -9,7 +9,7 @@ Single-process Python web application:
 - **Backend:** FastAPI (async Python)
 - **Database:** SQLite via SQLAlchemy ORM
 - **Frontend:** Server-rendered Jinja2 templates + vanilla JavaScript
-- **Scheduler:** APScheduler for daily discovery job
+- **Scheduler:** APScheduler for comprehensive nightly pipeline (discovery, deduplication, embedding refresh, baseline simulation, advisory, maintenance)
 - **LLM:** OpenRouter API (`deepseek/deepseek-v4-pro`, `deepseek/deepseek-v4-flash`, `perplexity/pplx-embed-v1-0.6b`)
 - **Search:** Brave Search API
 - **PDF:** WeasyPrint
@@ -56,6 +56,10 @@ OPENROUTER_EMBEDDING_MODEL=perplexity/pplx-embed-v1-0.6b
 F1_SEASON=2026
 APP_HOST=127.0.0.1
 APP_PORT=8080
+DAILY_JOB_SCHEDULE=03:00
+DAILY_JOB_TIMEZONE=Europe/Berlin
+DATA_RETENTION_DAYS=90
+PAGE_FETCH_ENABLED=true
 ```
 
 ### Run
@@ -108,8 +112,19 @@ Ask questions about the current F1 season. The agent answers from local context 
 ### Reports
 Export simulation results as Markdown, PDF, or JSON with full citation lists.
 
-### Daily Job
-Automatic daily discovery job (configurable schedule) to keep event data fresh.
+### Nightly Pipeline
+A comprehensive 6-stage pipeline runs daily at the configured time (default: 3 AM Berlin time). Each stage is independently tracked; a single stage failure does not halt remaining stages.
+
+| Stage | Purpose |
+|---|---|
+| **Discovery** | Brave Search → LLM classification → page fetch → structured event extraction |
+| **Deduplication** | LLM-based duplicate detection; groups identical events |
+| **Embeddings** | Content-hash-aware embedding refresh for all entity types (driver, team, car, PU, circuit) |
+| **Simulation** | Automatic baseline season simulation reflecting fresh data |
+| **Advisory** | Strategic recommendations generated from the latest simulation |
+| **Maintenance** | Prunes stale uncited sources, hard-purges long-deleted records, updates past-race statuses |
+
+The pipeline can also be triggered manually via `/config/` (**Full Refresh**) or the API. Job status, per-stage results, and timing are displayed on the config page and dashboard.
 
 ### Data Management
 - Delete individual scenarios
@@ -169,7 +184,7 @@ f1/
 6. **Human-in-the-loop via scenarios** — Refinement through scenario creation and branch acceptance, not weight editing
 7. **Agent autonomy bounded by validation** — Multi-step reasoning allowed, state changes require validation
 8. **No auth in v1** — Localhost-only by default, warning on non-local binding
-9. **Daily job without notifications** — Status visible in UI
+9. **Comprehensive nightly pipeline** — Multi-stage pipeline with per-stage isolation, status tracking, and maintenance
 10. **Hybrid simulation with calibrated humility** — Numeric for race/championship, qualitative labels for risk
 
 ## Backup
@@ -198,7 +213,7 @@ Restore by placing them back in their original locations.
 - [x] Numeric forecast outputs
 - [x] Strategic recommendations
 - [x] Markdown, PDF, and JSON export
-- [x] Daily job with status display
+- [x] Comprehensive nightly pipeline (discovery, dedup, embeddings, simulation, advisory, maintenance)
 - [x] Secrets never exposed in UI, logs, database, or reports
 - [x] No raw LLM prompts/responses or Brave payloads persisted
 - [x] Deletion workflows (all data, single scenario, source records)

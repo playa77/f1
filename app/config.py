@@ -26,7 +26,9 @@ class Settings(BaseSettings):
     report_timeout: int = 60
 
     daily_job_schedule: str = "03:00"
+    daily_job_timezone: str = "Europe/Berlin"
     min_embedding_dimension: int = 1536
+    data_retention_days: int = 90
 
     model_config = {
         "env_file": ".env",

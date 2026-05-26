@@ -37,7 +37,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     ).limit(5).all()
 
     last_discovery = db.query(JobStatus).filter(
-        JobStatus.job_type.in_(["daily_discovery", "manual_discovery"]),
+        JobStatus.job_type.in_(["nightly_pipeline", "daily_discovery", "manual_discovery"]),
     ).order_by(JobStatus.created_at.desc()).first()
 
     failed_jobs = db.query(JobStatus).filter(

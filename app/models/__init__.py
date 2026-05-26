@@ -138,6 +138,7 @@ class DiscoveryMethod(_py_enum.Enum):
 
 class JobType(_py_enum.Enum):
     daily_discovery = "daily_discovery"
+    nightly_pipeline = "nightly_pipeline"
     manual_discovery = "manual_discovery"
     static_data_refresh = "static_data_refresh"
     embedding_refresh = "embedding_refresh"

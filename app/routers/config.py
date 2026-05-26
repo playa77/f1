@@ -35,6 +35,7 @@ async def config_page(request: Request, db: Session = Depends(get_db)):
         "embedding_model": settings.openrouter_embedding_model,
         "page_fetch_enabled": settings.page_fetch_enabled,
         "daily_job_schedule": settings.daily_job_schedule,
+        "daily_job_timezone": settings.daily_job_timezone,
         "database_path": settings.sqlite_path,
         "reports_dir": settings.reports_dir,
         "openrouter_configured": bool(settings.openrouter_api_key and not settings.openrouter_api_key.startswith("sk-or-v1-your-")),
