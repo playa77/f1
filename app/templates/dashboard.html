@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — F1 Strategic Analyzer{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>Dashboard</h1>
+
+    {% if config_warnings %}
+    <div class="warnings-box">
+        <h3>Configuration Warnings</h3>
+        <ul>
+        {% for warning in config_warnings %}
+            <li>{{ warning }}</li>
+        {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-value">{{ drivers_count }}</span>
+            <span class="stat-label">Drivers</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ teams_count }}</span>
+            <span class="stat-label">Teams</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ races_count }}</span>
+            <span class="stat-label">Races</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ events_count }}</span>
+            <span class="stat-label">Events</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ scenarios_count }}</span>
+            <span class="stat-label">Scenarios</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-value">{{ simulations_count }}</span>
+            <span class="stat-label">Simulations</span>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="dash-panel">
+            <h2>Recent Events</h2>
+            {% if recent_events %}
+            <div class="list-items">
+                {% for event in recent_events %}
+                <div class="list-item">
+                    <span class="badge {{ event.event_type.name if event.event_type else '' }}">{{ event.event_type.value if event.event_type else '' }}</span>
+                    <span class="item-summary">{{ event.summary[:120] }}{% if event.summary|length > 120 %}...{% endif %}</span>
+                    <span class="item-meta">{{ event.confidence.value if event.confidence else '' }} confidence</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty-state">No events discovered yet. Run a discovery job or seed data first.</p>
+            {% endif %}
+        </div>
+
+        <div class="dash-panel">
+            <h2>Recent Scenarios</h2>
+            {% if recent_scenarios %}
+            <div class="list-items">
+                {% for scenario in recent_scenarios %}
+                <div class="list-item">
+                    <a href="/scenarios/{{ scenario.id }}">{{ scenario.name }}</a>
+                    <span class="item-meta">{{ scenario.created_at.strftime('%Y-%m-%d') }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty-state">No scenarios yet. <a href="/scenarios/new">Create one</a>.</p>
+            {% endif %}
+        </div>
+
+        <div class="dash-panel">
+            <h2>Job Status</h2>
+            {% if last_discovery %}
+            <div class="list-item">
+                <span class="badge">{{ last_discovery.job_type.value if last_discovery.job_type else '' }}</span>
+                <span class="item-summary">{{ last_discovery.status.value if last_discovery.status else '' }}</span>
+                <span class="item-meta">{{ last_discovery.completed_at.strftime('%Y-%m-%d %H:%M') if last_discovery.completed_at else 'Running...' }}</span>
+            </div>
+            {% else %}
+            <p class="empty-state">No jobs run yet.</p>
+            {% endif %}
+
+            {% if failed_jobs %}
+            <h3>Recent Failures</h3>
+            {% for job in failed_jobs %}
+            <div class="list-item error-item">
+                <span class="badge">{{ job.job_type.value if job.job_type else '' }}</span>
+                <span class="item-summary">Failed</span>
+                <span class="item-meta">{{ job.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="dash-panel">
+            <h2>Quick Actions</h2>
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="triggerRefresh('manual_discovery')">Run Discovery</button>
+                <button class="btn" onclick="window.location='/scenarios/new'">New Scenario</button>
+                <button class="btn" onclick="window.location='/config/'">Configuration</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

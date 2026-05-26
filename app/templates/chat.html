@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Agent Chat{% endblock %}
+
+{% block content %}
+<div class="chat-page">
+    <h1>Agent Chat</h1>
+    <p class="chat-hint">
+        Ask questions about the current F1 season, scenarios, events, and strategic analysis. 
+        The agent can answer from local context and propose scenario branches.
+    </p>
+
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-message system">
+            <p>Welcome to the F1 Strategic Analyst. How can I help you analyze the {{ config_season }} season?</p>
+        </div>
+    </div>
+
+    <form class="chat-form" id="chatForm" onsubmit="sendMessage(event)">
+        <input type="text" id="chatInput" name="message" placeholder="Ask a question about the F1 season..." required />
+        <button type="submit" class="btn btn-primary">Send</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function sendMessage(e) {
+    e.preventDefault();
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    if (!message) return;
+
+    const container = document.getElementById('chatContainer');
+
+    container.innerHTML += `<div class="chat-message user"><p>${escapeHtml(message)}</p></div>`;
+    container.innerHTML += `<div class="chat-message loading"><p>Thinking...</p></div>`;
+    input.value = '';
+    input.disabled = true;
+
+    try {
+        const formData = new FormData();
+        formData.append('message', message);
+        const resp = await fetch('/chat/send', { method: 'POST', body: formData });
+        const data = await resp.json();
+
+        container.removeChild(container.lastChild);
+
+        let html = `<div class="chat-message assistant"><p>${escapeHtml(data.answer)}</p>`;
+        if (data.citations && data.citations.length > 0) {
+            html += '<div class="chat-citations"><strong>Citations:</strong><ul>';
+            data.citations.forEach(c => {
+                html += `<li><a href="${escapeHtml(c.url || '')}" target="_blank">${escapeHtml(c.title || c.url)}</a></li>`;
+            });
+            html += '</ul></div>';
+        }
+        if (data.proposed_actions && data.proposed_actions.length > 0) {
+            html += '<div class="chat-actions"><strong>Suggested Actions:</strong><ul>';
+            data.proposed_actions.forEach(a => {
+                html += `<li>${escapeHtml(a)}</li>`;
+            });
+            html += '</ul></div>';
+        }
+        html += '</div>';
+        container.innerHTML += html;
+    } catch (e) {
+        container.removeChild(container.lastChild);
+        container.innerHTML += `<div class="chat-message error"><p>Error: ${escapeHtml(e.message)}</p></div>`;
+    } finally {
+        input.disabled = false;
+        input.focus();
+    }
+    container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(text) {
+    const d = document.createElement('div');
+    d.textContent = text;
+    return d.innerHTML;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ entity.name }} — Entity Detail{% endblock %}
+
+{% block content %}
+<div class="entity-detail">
+    <h1>{{ entity.name }}</h1>
+    <p class="entity-type">Type: {{ entity_type }}</p>
+
+    <dl class="detail-list">
+        {% for attr in entity.__dict__.keys() %}
+        {% if not attr.startswith('_') and attr not in ('metadata', 'is_deleted', 'created_at', 'updated_at') %}
+        {% set val = entity.__dict__[attr] %}
+        {% if val is not none and val != '' %}
+        <dt>{{ attr | replace('_', ' ') | title }}</dt>
+        <dd>{{ val }}</dd>
+        {% endif %}
+        {% endif %}
+        {% endfor %}
+    </dl>
+
+    <h2>Citations</h2>
+    {% if citations %}
+    <div class="citations-list">
+        {% for cit in citations %}
+        <div class="citation-item">
+            <p><strong>Source:</strong> <a href="{{ cit.url }}" target="_blank">{{ cit.title or cit.url }}</a></p>
+            <p><strong>Domain:</strong> {{ cit.domain }}</p>
+            <p><strong>Claim:</strong> {{ cit.claim_supported or '—' }}</p>
+            <p><strong>Confidence:</strong> {{ cit.confidence.value if cit.confidence else '—' }}</p>
+            {% if cit.excerpt_snippet %}<p><strong>Excerpt:</strong> {{ cit.excerpt_snippet[:300] }}</p>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-state">No citations for this entity.</p>
+    {% endif %}
+</div>
+{% endblock %}

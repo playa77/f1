@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Simulation Results{% endblock %}
+
+{% block content %}
+<div class="simulation-detail">
+    <h1>Simulation Results</h1>
+    <p>Run ID: {{ run.id }}</p>
+    <p>Status: <span class="badge {{ run.status.value }}">{{ run.status.value }}</span></p>
+    <p>Timestamp: {{ run.run_timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+
+    {% if run.failure_details %}
+    <div class="error-box">
+        <h3>Failure Details</h3>
+        <pre>{{ run.failure_details | tojson(indent=2) if run.failure_details is mapping else run.failure_details }}</pre>
+    </div>
+    {% endif %}
+
+    {% if driver_championship %}
+    <h2>Driver Championship</h2>
+    <table class="data-table">
+        <thead><tr><th>Position</th><th>Driver</th><th>Points</th></tr></thead>
+        <tbody>
+        {% for name, pts in driver_championship[:10] %}
+        <tr><td>{{ loop.index }}</td><td>{{ name }}</td><td>{{ pts | round(1) }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if constructor_championship %}
+    <h2>Constructor Championship</h2>
+    <table class="data-table">
+        <thead><tr><th>Position</th><th>Team</th><th>Points</th></tr></thead>
+        <tbody>
+        {% for name, pts in constructor_championship[:10] %}
+        <tr><td>{{ loop.index }}</td><td>{{ name }}</td><td>{{ pts | round(1) }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if numeric.get('dnf_reliability_probability') %}
+    <h2>DNF/Reliability Risk</h2>
+    <table class="data-table">
+        <thead><tr><th>Driver</th><th>DNF Probability</th></tr></thead>
+        <tbody>
+        {% for did, prob in numeric.dnf_reliability_probability.items() %}
+        <tr><td>{{ driver_names.get(did, did[:8]) }}</td><td>{{ (prob * 100) | round(1) }}%</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <h2>Qualitative Risk Scores</h2>
+    {% set pol_risk = numeric.get('political_regulatory_risk', {}) %}
+    <p><strong>Political/Regulatory Risk:</strong> {{ pol_risk.get('score', 'N/A') }} (confidence: {{ pol_risk.get('confidence', 'N/A') }})</p>
+    {% set fin_pres = numeric.get('sponsor_financial_pressure', {}) %}
+    <p><strong>Sponsor/Financial Pressure:</strong> {{ fin_pres.get('score', 'N/A') }} (confidence: {{ fin_pres.get('confidence', 'N/A') }})</p>
+
+    {% if run.advisory_outputs %}
+    <h2>Strategic Recommendations</h2>
+    {% set advisory = run.advisory_outputs if run.advisory_outputs is iterable and run.advisory_outputs is not string else {} %}
+    {% set recs = advisory.get('recommendations', []) if advisory is mapping else [] %}
+    {% if recs %}
+    {% for rec in recs %}
+    <div class="recommendation-card">
+        <h3>{{ rec.get('target_entity', 'Recommendation') }}</h3>
+        <p><strong>Action:</strong> {{ rec.get('recommendation', '') }}</p>
+        <p><strong>Rationale:</strong> {{ rec.get('rationale', '') }}</p>
+        <p><strong>Confidence:</strong> {{ rec.get('confidence', '') }} | <strong>Priority:</strong> {{ rec.get('priority', '') }}</p>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endif %}
+
+    <div class="export-actions">
+        <button class="btn" onclick="exportReport('{{ run.id }}', 'markdown')">Export Markdown</button>
+        <button class="btn" onclick="exportReport('{{ run.id }}', 'json')">Export JSON</button>
+        <button class="btn" onclick="exportReport('{{ run.id }}', 'pdf')">Export PDF</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function exportReport(runId, format) {
+    try {
+        const resp = await fetch(`/simulations/run/${runId}/export`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ format })
+        });
+        const data = await resp.json();
+        if (data.report_id) {
+            window.open(`/reports/download/${data.report_id}`, '_blank');
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Simulations{% endblock %}
+
+{% block content %}
+<div class="simulations-page">
+    <div class="page-header">
+        <h1>Simulation Runs</h1>
+        <button class="btn btn-primary" onclick="runBaseline()">Run Baseline</button>
+    </div>
+
+    {% if runs %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Run ID</th>
+                <th>Scenario</th>
+                <th>Status</th>
+                <th>Timestamp</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for run in runs %}
+        <tr>
+            <td><a href="/simulations/run/{{ run.id }}">{{ run.id[:12] }}...</a></td>
+            <td>{{ run._scenario_name or 'Baseline' }}</td>
+            <td><span class="badge {{ run.status.value }}">{{ run.status.value }}</span></td>
+            <td>{{ run.run_timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>
+                <a href="/simulations/run/{{ run.id }}" class="btn btn-sm">View</a>
+                <button class="btn btn-sm" onclick="exportReport('{{ run.id }}', 'markdown')">MD</button>
+                <button class="btn btn-sm" onclick="exportReport('{{ run.id }}', 'json')">JSON</button>
+                <button class="btn btn-sm" onclick="exportReport('{{ run.id }}', 'pdf')">PDF</button>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No simulation runs yet.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function runBaseline() {
+    try {
+        const resp = await fetch('/simulations/run/baseline', { method: 'POST' });
+        const data = await resp.json();
+        if (data.run_id) {
+            window.location = `/simulations/run/${data.run_id}`;
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+async function exportReport(runId, format) {
+    try {
+        const resp = await fetch(`/simulations/run/${runId}/export`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ format })
+        });
+        const data = await resp.json();
+        if (data.report_id) {
+            window.open(`/reports/download/${data.report_id}`, '_blank');
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+</script>
+{% endblock %}

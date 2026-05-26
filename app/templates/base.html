@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}F1 Strategic Analyzer{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <a href="/dashboard/">F1 Strategic Analyzer</a>
+            <span class="season-badge">Season {{ config_season }}</span>
+        </div>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">☰</button>
+        <div class="nav-links" id="navLinks">
+            <a href="/dashboard/">Dashboard</a>
+            <a href="/entities/?entity_type=drivers">Entities</a>
+            <a href="/events">Events</a>
+            <a href="/scenarios/">Scenarios</a>
+            <a href="/simulations/">Simulations</a>
+            <a href="/chat/">Chat</a>
+            <a href="/reports/">Reports</a>
+            <a href="/config/">Config</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <p>F1 Strategic Agentic Analyzer v0.1.0 — Local Workstation</p>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

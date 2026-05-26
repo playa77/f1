@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — Entities{% endblock %}
+
+{% block content %}
+<div class="entities-page">
+    <h1>{{ title }}</h1>
+
+    <div class="entity-filters">
+        <a href="/entities/?entity_type=drivers" class="btn {% if entity_type == 'drivers' %}btn-active{% endif %}">Drivers</a>
+        <a href="/entities/?entity_type=teams" class="btn {% if entity_type == 'teams' %}btn-active{% endif %}">Teams</a>
+        <a href="/entities/?entity_type=cars" class="btn {% if entity_type == 'cars' %}btn-active{% endif %}">Cars</a>
+        <a href="/entities/?entity_type=power_units" class="btn {% if entity_type == 'power_units' %}btn-active{% endif %}">Power Units</a>
+        <a href="/entities/?entity_type=circuits" class="btn {% if entity_type == 'circuits' %}btn-active{% endif %}">Circuits</a>
+        <a href="/entities/?entity_type=races" class="btn {% if entity_type == 'races' %}btn-active{% endif %}">Races</a>
+        <a href="/entities/?entity_type=assets" class="btn {% if entity_type == 'assets' %}btn-active{% endif %}">Assets</a>
+    </div>
+
+    {% if items %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                {% if entity_type == 'drivers' %}<th>Team</th><th>Number</th><th>Status</th>{% endif %}
+                {% if entity_type == 'teams' %}<th></th>{% endif %}
+                {% if entity_type == 'races' %}<th>Circuit</th><th>Status</th><th>Order</th>{% endif %}
+                {% if entity_type == 'circuits' %}<th>Country</th>{% endif %}
+                {% if entity_type == 'assets' %}<th>Type</th><th>Impact</th>{% endif %}
+                <th>Version</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in items %}
+        <tr>
+            <td>
+                <a href="/entities/{{ entity_type }}/{{ item.id }}">{{ item.name }}</a>
+            </td>
+            {% if entity_type == 'drivers' %}
+            <td>{{ item.team.name if item.team else '—' }}</td>
+            <td>{{ item.driver_number or '—' }}</td>
+            <td><span class="badge">{{ item.status.value if item.status else '' }}</span></td>
+            {% endif %}
+            {% if entity_type == 'races' %}
+            <td>{{ item.circuit.name if item.circuit else '—' }}</td>
+            <td><span class="badge {{ item.status.value if item.status else '' }}">{{ item.status.value if item.status else '' }}</span></td>
+            <td>{{ item.race_order }}</td>
+            {% endif %}
+            {% if entity_type == 'circuits' %}
+            <td>{{ item.country or '—' }}</td>
+            {% endif %}
+            {% if entity_type == 'assets' %}
+            <td>{{ item.asset_type.value if item.asset_type else '' }}</td>
+            <td>{{ item.directional_impact.value if item.directional_impact else '' }}</td>
+            {% endif %}
+            <td>v{{ item.version }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No {{ entity_type }} found. <a href="/config/">Seed data</a> to populate.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Events — F1 Strategic Analyzer{% endblock %}
+
+{% block content %}
+<div class="events-page">
+    <h1>Event Feed</h1>
+
+    <div class="filters">
+        <form method="get" class="filter-form">
+            <select name="event_type">
+                <option value="">All Types</option>
+                <option value="performance" {% if event_type == 'performance' %}selected{% endif %}>Performance</option>
+                <option value="reliability" {% if event_type == 'reliability' %}selected{% endif %}>Reliability</option>
+                <option value="driver_condition" {% if event_type == 'driver_condition' %}selected{% endif %}>Driver Condition</option>
+                <option value="team_internal_conflict" {% if event_type == 'team_internal_conflict' %}selected{% endif %}>Team Conflict</option>
+                <option value="regulatory_fia" {% if event_type == 'regulatory_fia' %}selected{% endif %}>Regulatory/FIA</option>
+                <option value="race_logistics" {% if event_type == 'race_logistics' %}selected{% endif %}>Race Logistics</option>
+                <option value="geopolitical_disruption" {% if event_type == 'geopolitical_disruption' %}selected{% endif %}>Geopolitical</option>
+                <option value="financial_sponsor_pressure" {% if event_type == 'financial_sponsor_pressure' %}selected{% endif %}>Financial/Pressure</option>
+                <option value="weather_circuit_risk" {% if event_type == 'weather_circuit_risk' %}selected{% endif %}>Weather/Circuit</option>
+                <option value="other" {% if event_type == 'other' %}selected{% endif %}>Other</option>
+            </select>
+            <select name="confidence">
+                <option value="">All Confidence</option>
+                <option value="low" {% if confidence == 'low' %}selected{% endif %}>Low</option>
+                <option value="medium" {% if confidence == 'medium' %}selected{% endif %}>Medium</option>
+                <option value="high" {% if confidence == 'high' %}selected{% endif %}>High</option>
+            </select>
+            <button type="submit" class="btn">Filter</button>
+            <a href="/sources" class="btn">View Sources</a>
+        </form>
+    </div>
+
+    {% if events %}
+    <div class="event-list">
+        {% for event in events %}
+        <div class="event-card">
+            <div class="event-header">
+                <span class="badge {{ event.event_type.value if event.event_type else '' }}">{{ event.event_type.value if event.event_type else '' }}</span>
+                <span class="badge confidence-{{ event.confidence.value if event.confidence else '' }}">{{ event.confidence.value if event.confidence else '' }} confidence</span>
+                <span class="badge impact-{{ event.directional_impact.value if event.directional_impact else '' }}">{{ event.directional_impact.value if event.directional_impact else '' }}</span>
+            </div>
+            <p class="event-summary">{{ event.summary }}</p>
+            <div class="event-meta">
+                <span>Time relevance: {{ event.time_relevance.value if event.time_relevance else '—' }}</span>
+                {% if event.magnitude %}<span>Magnitude: {{ event.magnitude }}</span>{% endif %}
+                <span>{{ event.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-state">No events discovered yet. <a href="/config/">Run a discovery job</a> to find events.</p>
+    {% endif %}
+</div>
+{% endblock %}

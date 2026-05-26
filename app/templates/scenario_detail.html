@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}{{ scenario.name }} — Scenario{% endblock %}
+
+{% block content %}
+<div class="scenario-detail">
+    <h1>{{ scenario.name }}</h1>
+    {% if scenario.goal %}<p class="scenario-goal"><strong>Goal:</strong> {{ scenario.goal }}</p>{% endif %}
+
+    <div class="actions">
+        <button class="btn btn-primary" id="proposeBranchesBtn" onclick="proposeBranches()">Propose Branches</button>
+        {% if scenario.current_version_id %}
+        <button class="btn btn-run" onclick="runSimulation('{{ scenario.id }}')">Run Simulation</button>
+        {% endif %}
+        <button class="btn btn-danger" onclick="deleteScenario('{{ scenario.id }}')">Delete</button>
+    </div>
+
+    <div id="branch-proposals" class="branch-proposals"></div>
+    <div id="simulation-status" class="simulation-status"></div>
+
+    <h2>Versions</h2>
+    {% if versions %}
+    <div class="version-list">
+        {% for v in versions %}
+        <div class="version-card">
+            <h3>Version {{ v.version_number }} <span class="badge">{{ v.created_at.strftime('%Y-%m-%d %H:%M') }}</span></h3>
+            <p>Baseline: {{ v.baseline_type or 'current season state' }}</p>
+
+            <h4>Accepted Branches</h4>
+            {% set accepted = [] %}
+            {% for b in v.branches %}
+                {% if b.status.value == 'accepted' %}
+                {% set _ = accepted.append(b) %}
+                {% endif %}
+            {% endfor %}
+
+            {% if accepted %}
+            <ul class="branch-list">
+                {% for b in accepted %}
+                <li class="branch-item branch-accepted">
+                    <span class="badge">{{ b.branch_type.value if b.branch_type else '' }}</span>
+                    <span>{{ b.summary }}</span>
+                    <span class="impact-{{ b.directional_impact.value if b.directional_impact else '' }}">{{ b.directional_impact.value if b.directional_impact else '' }}</span>
+                    <span class="confidence-{{ b.confidence.value if b.confidence else '' }}">{{ b.confidence.value if b.confidence else '' }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="empty-state small">No accepted branches yet.</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-state">No versions yet. Propose branches to create a version.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function proposeBranches() {
+    const btn = document.getElementById('proposeBranchesBtn');
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+    const container = document.getElementById('branch-proposals');
+
+    try {
+        const resp = await fetch('/scenarios/{{ scenario.id }}/propose-branches', { method: 'POST' });
+        const data = await resp.json();
+
+        if (data.error) {
+            container.innerHTML = `<div class="error-box">${data.error}</div>`;
+            return;
+        }
+
+        let html = `<h2>Proposed Branches (v${data.version_number})</h2>`;
+        html += `<p class="proposal-notes">${data.proposal_notes || ''}</p>`;
+
+        data.branches.forEach(b => {
+            html += `<div class="branch-card" id="branch-${b.id}">
+                <span class="badge">${b.branch_type}</span>
+                <p>${b.summary}</p>
+                <div class="branch-meta">
+                    <span>Impact: ${b.directional_impact}</span>
+                    <span>Confidence: ${b.confidence}</span>
+                    <span>Magnitude: ${b.magnitude}</span>
+                </div>
+                <p class="branch-rationale">${b.rationale || ''}</p>
+                <div class="branch-actions" id="actions-${b.id}">
+                    <button class="btn btn-accept" onclick="respondBranch('${b.id}', 'accept')">Accept</button>
+                    <button class="btn btn-reject" onclick="respondBranch('${b.id}', 'reject')">Reject</button>
+                </div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = `<div class="error-box">Error: ${e.message}</div>`;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Propose Branches';
+    }
+}
+
+async function respondBranch(branchId, action) {
+    try {
+        const resp = await fetch(`/scenarios/{{ scenario.id }}/branches/${branchId}/respond`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action })
+        });
+        const data = await resp.json();
+        const actionsDiv = document.getElementById(`actions-${branchId}`);
+        actionsDiv.innerHTML = `<span class="badge ${data.branch_status}">${data.branch_status}</span>`;
+        if (action === 'accept') {
+            setTimeout(() => location.reload(), 1500);
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+
+async function runSimulation(scenarioId) {
+    const statusDiv = document.getElementById('simulation-status');
+    statusDiv.innerHTML = '<div class="loading">Running simulation...</div>';
+    try {
+        const resp = await fetch(`/simulations/run/scenario/${scenarioId}`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.run_id) {
+            statusDiv.innerHTML = `<div class="success-box">Simulation complete! <a href="/simulations/run/${data.run_id}">View results</a></div>`;
+        } else {
+            statusDiv.innerHTML = `<div class="error-box">${data.message || 'Failed'}</div>`;
+        }
+    } catch (e) {
+        statusDiv.innerHTML = `<div class="error-box">Error: ${e.message}</div>`;
+    }
+}
+
+async function deleteScenario(id) {
+    if (!confirm('Delete this scenario?')) return;
+    try {
+        await fetch('/config/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ delete_type: 'scenario', target_id: id })
+        });
+        window.location = '/scenarios/';
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+</script>
+{% endblock %}

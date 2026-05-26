@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Configuration{% endblock %}
+
+{% block content %}
+<div class="config-page">
+    <h1>Configuration & Admin</h1>
+
+    <div class="config-section">
+        <h2>Provider Status</h2>
+        <table class="data-table">
+            <tr><td>OpenRouter API</td><td><span class="badge {{ 'active' if config.openrouter_configured else 'inactive' }}">{{ 'Configured' if config.openrouter_configured else 'Not Configured' }}</span></td></tr>
+            <tr><td>Brave Search API</td><td><span class="badge {{ 'active' if config.brave_configured else 'inactive' }}">{{ 'Configured' if config.brave_configured else 'Not Configured' }}</span></td></tr>
+            <tr><td>Strong Model</td><td>{{ config.strong_model }}</td></tr>
+            <tr><td>Fast Model</td><td>{{ config.fast_model }}</td></tr>
+            <tr><td>Embedding Model</td><td>{{ config.embedding_model }}</td></tr>
+            <tr><td>Season</td><td>{{ config.season }}</td></tr>
+            <tr><td>Database</td><td>{{ config.database_path }}</td></tr>
+            <tr><td>Reports Directory</td><td>{{ config.reports_dir }}</td></tr>
+            <tr><td>Page Fetch</td><td>{{ 'Enabled' if config.page_fetch_enabled else 'Disabled' }}</td></tr>
+            <tr><td>Daily Job Schedule</td><td>{{ config.daily_job_schedule }}</td></tr>
+            <tr><td>Host:Port</td><td>{{ config.host }}:{{ config.port }}</td></tr>
+        </table>
+    </div>
+
+    <div class="config-section">
+        <h2>Data Management</h2>
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="triggerRefresh('seed_data')">Seed Static Data</button>
+            <button class="btn btn-primary" onclick="triggerRefresh('manual_discovery')">Run Discovery</button>
+            <button class="btn btn-secondary" onclick="triggerRefresh('full_refresh')">Full Refresh</button>
+        </div>
+        <div id="refresh-status" class="refresh-status"></div>
+    </div>
+
+    <div class="config-section danger-zone">
+        <h2>Danger Zone</h2>
+        <p>These actions cannot be undone. Use with caution.</p>
+        <div class="action-buttons">
+            <button class="btn btn-danger" onclick="deleteAllData()">Delete All Data</button>
+            <div style="margin-top: 1rem;">
+                <input type="text" id="deleteTargetId" placeholder="Enter record ID" class="form-control" style="width: 300px; display: inline-block;" />
+                <button class="btn btn-danger" onclick="deleteSourceRecord()">Delete Source Record</button>
+            </div>
+        </div>
+        <div id="delete-status" class="delete-status"></div>
+    </div>
+
+    <div class="config-section">
+        <h2>Job History</h2>
+        {% if latest_jobs %}
+        <table class="data-table">
+            <thead>
+                <tr><th>Job Type</th><th>Status</th><th>Started</th><th>Completed</th><th>Details</th></tr>
+            </thead>
+            <tbody>
+            {% for job in latest_jobs %}
+            <tr>
+                <td>{{ job.job_type.value if job.job_type else '' }}</td>
+                <td><span class="badge {{ job.status.value }}">{{ job.status.value }}</span></td>
+                <td>{{ job.started_at.strftime('%Y-%m-%d %H:%M') if job.started_at else '—' }}</td>
+                <td>{{ job.completed_at.strftime('%Y-%m-%d %H:%M') if job.completed_at else '—' }}</td>
+                <td>{{ job.failure_details | tojson if job.failure_details else '—' }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty-state">No jobs run yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function triggerRefresh(type) {
+    const statusDiv = document.getElementById('refresh-status');
+    statusDiv.innerHTML = '<div class="loading">Running...</div>';
+    try {
+        const resp = await fetch('/config/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_type: type })
+        });
+        const data = await resp.json();
+        statusDiv.innerHTML = `<div class="success-box">Complete: ${JSON.stringify(data)}</div>`;
+        setTimeout(() => location.reload(), 2000);
+    } catch (e) {
+        statusDiv.innerHTML = `<div class="error-box">Error: ${e.message}</div>`;
+    }
+}
+
+async function deleteAllData() {
+    if (!confirm('Are you sure you want to delete ALL data? This cannot be undone.')) return;
+    const statusDiv = document.getElementById('delete-status');
+    try {
+        const resp = await fetch('/config/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ delete_type: 'all' })
+        });
+        const data = await resp.json();
+        statusDiv.innerHTML = `<div class="success-box">${data.message}</div>`;
+        setTimeout(() => location.reload(), 1500);
+    } catch (e) {
+        statusDiv.innerHTML = `<div class="error-box">Error: ${e.message}</div>`;
+    }
+}
+
+async function deleteSourceRecord() {
+    const id = document.getElementById('deleteTargetId').value.trim();
+    if (!id) { alert('Enter a record ID'); return; }
+    const statusDiv = document.getElementById('delete-status');
+    try {
+        const resp = await fetch('/config/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ delete_type: 'source_record', target_id: id })
+        });
+        const data = await resp.json();
+        statusDiv.innerHTML = `<div class="success-box">${data.message}</div>`;
+    } catch (e) {
+        statusDiv.innerHTML = `<div class="error-box">Error: ${e.message}</div>`;
+    }
+}
+</script>
+{% endblock %}

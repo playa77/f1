@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Simulation Comparison{% endblock %}
+
+{% block content %}
+<div class="simulation-compare">
+    <h1>Simulation Comparison</h1>
+
+    <div class="compare-grid">
+        <div>
+            <h2>Run A</h2>
+            <p>ID: {{ run_a.id }}</p>
+            <p>Status: <span class="badge {{ run_a.status.value }}">{{ run_a.status.value }}</span></p>
+            <p>Time: {{ run_a.run_timestamp.strftime('%Y-%m-%d %H:%M') }}</p>
+        </div>
+        <div>
+            <h2>Run B</h2>
+            <p>ID: {{ run_b.id }}</p>
+            <p>Status: <span class="badge {{ run_b.status.value }}">{{ run_b.status.value }}</span></p>
+            <p>Time: {{ run_b.run_timestamp.strftime('%Y-%m-%d %H:%M') }}</p>
+        </div>
+    </div>
+
+    <h2>Differences (B - A)</h2>
+    {% if diff %}
+    {% for key, values in diff.items() %}
+    <h3>{{ key | replace('_', ' ') | title }}</h3>
+    {% if values is mapping %}
+    <table class="data-table">
+        <thead><tr><th>Entity</th><th>Δ</th></tr></thead>
+        <tbody>
+        {% for sub_key, delta in values.items() %}
+        <tr>
+            <td>{{ sub_key[:40] }}</td>
+            <td class="{% if delta > 0 %}positive{% elif delta < 0 %}negative{% endif %}">
+                {{ delta }}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>{{ values }}</p>
+    {% endif %}
+    {% endfor %}
+    {% else %}
+    <p class="empty-state">No differences to compare.</p>
+    {% endif %}
+</div>
+{% endblock %}

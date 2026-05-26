@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Sources — F1 Strategic Analyzer{% endblock %}
+
+{% block content %}
+<div class="sources-page">
+    <h1>Source Records</h1>
+    {% if sources %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Title/URL</th>
+                <th>Domain</th>
+                <th>Discovery Method</th>
+                <th>Content Policy</th>
+                <th>Retrieved</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for source in sources %}
+        <tr>
+            <td><a href="{{ source.url }}" target="_blank">{{ source.title or source.url[:80] }}</a></td>
+            <td>{{ source.domain }}</td>
+            <td>{{ source.discovery_method.value if source.discovery_method else '' }}</td>
+            <td>{{ source.content_policy }}</td>
+            <td>{{ source.retrieval_timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No sources discovered yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

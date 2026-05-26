@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Scenarios — F1 Strategic Analyzer{% endblock %}
+
+{% block content %}
+<div class="scenarios-page">
+    <div class="page-header">
+        <h1>Scenarios</h1>
+        <a href="/scenarios/new" class="btn btn-primary">+ New Scenario</a>
+    </div>
+
+    {% if scenarios %}
+    <div class="scenario-grid">
+        {% for s in scenarios %}
+        <div class="scenario-card">
+            <h3><a href="/scenarios/{{ s.id }}">{{ s.name }}</a></h3>
+            {% if s.goal %}<p class="scenario-goal">{{ s.goal[:150] }}</p>{% endif %}
+            <div class="scenario-meta">
+                <span class="badge">v{{ s.current_version_id and 1 or 0 }}</span>
+                <span>{{ s.created_at.strftime('%Y-%m-%d') }}</span>
+            </div>
+            {% if s.runnable %}
+            <button class="btn btn-run" onclick="runScenarioSim('{{ s.id }}')">Run Simulation</button>
+            {% else %}
+            <p class="hint">Add branches before running</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-state">No scenarios yet. Create one to start analysis.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function runScenarioSim(id) {
+    try {
+        const resp = await fetch(`/simulations/run/scenario/${id}`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.run_id) {
+            window.location = `/simulations/run/${data.run_id}`;
+        } else {
+            alert(data.message || 'Simulation failed');
+        }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
+}
+</script>
+{% endblock %}

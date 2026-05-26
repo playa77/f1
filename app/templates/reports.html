@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div class="reports-page">
+    <h1>Generated Reports</h1>
+
+    {% if reports %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Report ID</th>
+                <th>Type</th>
+                <th>Format</th>
+                <th>Status</th>
+                <th>Generated</th>
+                <th>Download</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for r in reports %}
+        <tr>
+            <td>{{ r.id[:12] }}...</td>
+            <td>{{ r.report_type }}</td>
+            <td><span class="badge">{{ r.format.value if r.format else '' }}</span></td>
+            <td>{{ r.status.value if r.status else '' }}</td>
+            <td>{{ r.generated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>
+                {% if r.file_path %}
+                <a href="/reports/download/{{ r.id }}" class="btn btn-sm">Download</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No reports generated yet. Run a simulation and export results.</p>
+    {% endif %}
+</div>
+{% endblock %}
